@@ -67,4 +67,4 @@ data/
 - This was scaffolded in an environment without Node.js installed, so
   `npm install` / `npm run dev` have not been executed here — run them locally
   to verify before demoing.
-# InferenceRouter
+
