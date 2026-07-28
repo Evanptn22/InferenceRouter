@@ -4,7 +4,17 @@
       "Bash(curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh)",
       "Bash(bash)",
       "Bash(npm --version)",
-      "Bash(grep -E \"^fastify$|^@fastify$\")"
+      "Bash(grep -E \"^fastify$|^@fastify$\")",
+      "Bash(cp .env.example .env)",
+      "Bash(npm install *)",
+      "PowerShell(npm install)",
+      "PowerShell(Get-Command node -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command npm -ErrorAction SilentlyContinue)",
+      "PowerShell($env:PATH)",
+      "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:APPDATA\\\\nvm\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:LOCALAPPDATA\\\\Programs\" -ErrorAction SilentlyContinue | Select-Object Name)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\HI\\Documents\\InferenceRouter"
     ]
   }
 }
