@@ -19,7 +19,7 @@ export function buildApp() {
   app.register(rateLimit, {
     max: 20,
     timeWindow: '1 minute',
-    keyGenerator: (request) => request.headers['x-api-key'] ?? request.ip,
+    keyGenerator: (request) => request.headers['x-payment'] ?? request.ip,
   });
 
   app.register(chatRoutes);

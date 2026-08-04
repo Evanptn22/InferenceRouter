@@ -24,10 +24,12 @@ function replay() {
 mkdirSync(dataDir, { recursive: true });
 replay();
 
-export function record({ consumerId, pricing, status, latencyMs }) {
+export function record({ payerId, pricing, status, latencyMs, direction, scheme }) {
   const entry = {
     id: crypto.randomUUID(),
-    consumerId,
+    payerId,
+    direction, // 'inbound' (a caller paying InFlow) | 'outbound' (InFlow paying upstream)
+    scheme, // which payment scheme actually settled this row
     catalogId: pricing.catalogId,
     provider: pricing.provider,
     amount: pricing.amount,
@@ -42,8 +44,9 @@ export function record({ consumerId, pricing, status, latencyMs }) {
   return entry;
 }
 
-export function query(consumerId) {
-  const entries = records.filter((r) => r.consumerId === consumerId);
+// Only a payer's own inbound spend — never InFlow's own outbound upstream cost.
+export function query(payerId) {
+  const entries = records.filter((r) => r.payerId === payerId && r.direction === 'inbound');
   const totalSpentUSD = entries
     .filter((r) => r.status === 'ok')
     .reduce((sum, r) => sum + r.amount, 0);

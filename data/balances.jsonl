@@ -1,0 +1,7 @@
+{"payerId":"inflow-router","delta":-0.0012,"reason":"upstream:balanced","timestamp":"2026-08-04T05:45:51.477Z"}
+{"payerId":"inflow-router","delta":-0.0025,"reason":"upstream:quality","timestamp":"2026-08-04T05:45:51.477Z"}
+{"payerId":"acct-demo-1","delta":-0.0005,"reason":"pay:fast-cheap","timestamp":"2026-08-04T05:47:05.434Z"}
+{"payerId":"inflow-router","delta":-0.0002,"reason":"upstream:fast-cheap","timestamp":"2026-08-04T05:47:05.434Z"}
+{"payerId":"inflow-router","delta":-0.0012,"reason":"upstream:balanced","timestamp":"2026-08-04T05:47:05.435Z"}
+{"payerId":"inflow-router","delta":-0.0025,"reason":"upstream:quality","timestamp":"2026-08-04T05:47:05.435Z"}
+{"payerId":"acct-demo-1","delta":-0.0001,"reason":"pay:usage-query","timestamp":"2026-08-04T05:47:05.994Z"}

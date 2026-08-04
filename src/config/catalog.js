@@ -10,6 +10,7 @@ export const catalog = [
     providerModel: 'llama-3.1-8b-instant',
     apiKey: env.groqApiKey,
     pricePerRequestUSD: 0.0005,
+    providerCostUSD: 0.0002,
     fallback: 'balanced',
   },
   {
@@ -18,6 +19,7 @@ export const catalog = [
     providerModel: 'gpt-4o-mini',
     apiKey: env.openaiApiKey,
     pricePerRequestUSD: 0.002,
+    providerCostUSD: 0.0012,
     fallback: 'quality',
   },
   {
@@ -26,6 +28,7 @@ export const catalog = [
     providerModel: 'claude-3-5-haiku-20241022',
     apiKey: env.anthropicApiKey,
     pricePerRequestUSD: 0.004,
+    providerCostUSD: 0.0025,
     fallback: null,
   },
 ];

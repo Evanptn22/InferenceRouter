@@ -23,3 +23,17 @@ export function notCharged(catalogId, provider) {
     status: 'not_charged',
   };
 }
+
+// InFlow's own cost to the upstream provider — distinct from chargedPrice(),
+// which is what InFlow charges its callers. Same PricingResult shape so it
+// flows into ledger.record() unchanged.
+export function providerCost(catalogEntry) {
+  return {
+    amount: catalogEntry.providerCostUSD,
+    currency: 'USD',
+    unit: 'request',
+    catalogId: catalogEntry.id,
+    provider: catalogEntry.provider,
+    status: 'charged',
+  };
+}

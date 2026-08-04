@@ -1,4 +1,5 @@
-import { requireApiKey } from '../plugins/auth.js';
+import { createPaymentGate } from '../plugins/requirePayment.js';
+import { getCatalogEntry } from '../config/catalog.js';
 import { route } from '../core/router.js';
 
 const bodySchema = {
@@ -21,15 +22,25 @@ const bodySchema = {
   },
 };
 
+function resolveChatResource(request) {
+  const entry = getCatalogEntry(request.body?.model);
+  return entry ? { resourceId: entry.id, priceUSD: entry.pricePerRequestUSD } : null;
+}
+
 export default async function chatRoutes(app) {
   app.post(
     '/v1/chat/completions',
-    { preHandler: requireApiKey, schema: { body: bodySchema } },
+    { preHandler: createPaymentGate(resolveChatResource), schema: { body: bodySchema } },
     async (request, reply) => {
       const { model, messages } = request.body;
 
       try {
-        const result = await route({ catalogId: model, messages, consumerId: request.consumerId });
+        const result = await route({
+          catalogId: model,
+          messages,
+          payerId: request.payerId,
+          callerScheme: request.paymentScheme,
+        });
         return {
           id: crypto.randomUUID(),
           model,
@@ -41,12 +52,12 @@ export default async function chatRoutes(app) {
             unit: result.pricing.unit,
             latencyMs: result.latencyMs,
           },
+          payment: {
+            paidVia: request.paymentScheme,
+            upstreamPaidVia: result.upstreamScheme,
+          },
         };
       } catch (err) {
-        if (err.message.startsWith('unknown catalog id')) {
-          reply.code(404).send({ error: err.message });
-          return;
-        }
         reply.code(502).send({ error: err.message });
       }
     }
