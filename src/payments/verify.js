@@ -11,13 +11,13 @@ function decode(presented) {
 
 export async function verifyPresentedPayment({ presented, accepts }) {
   const payload = decode(presented);
-  const requirement = accepts.find((a) => a.scheme === payload.scheme);
+  const requirement = accepts.find((a) => a.rail === payload.rail);
   if (!requirement) {
-    throw new PaymentError(`unsupported payment scheme "${payload.scheme}"`, {
+    throw new PaymentError(`unsupported payment rail "${payload.rail}"`, {
       statusCode: 402,
       code: 'unsupported_scheme',
     });
   }
-  const { payerId, receipt } = await getScheme(payload.scheme).verifyPayment({ requirement, payload });
-  return { scheme: payload.scheme, payerId, receipt };
+  const { payerId, receipt } = await getScheme(payload.rail).verifyPayment({ requirement, payload });
+  return { rail: payload.rail, payerId, receipt };
 }

@@ -39,7 +39,7 @@ export default async function chatRoutes(app) {
           catalogId: model,
           messages,
           payerId: request.payerId,
-          callerScheme: request.paymentScheme,
+          callerRail: request.paymentRail,
         });
         return {
           id: crypto.randomUUID(),
@@ -53,8 +53,8 @@ export default async function chatRoutes(app) {
             latencyMs: result.latencyMs,
           },
           payment: {
-            paidVia: request.paymentScheme,
-            upstreamPaidVia: result.upstreamScheme,
+            paidVia: request.paymentRail,
+            upstreamPaidVia: result.upstreamRail,
           },
         };
       } catch (err) {

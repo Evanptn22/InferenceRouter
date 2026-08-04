@@ -24,12 +24,12 @@ function replay() {
 mkdirSync(dataDir, { recursive: true });
 replay();
 
-export function record({ payerId, pricing, status, latencyMs, direction, scheme }) {
+export function record({ payerId, pricing, status, latencyMs, direction, rail }) {
   const entry = {
     id: crypto.randomUUID(),
     payerId,
     direction, // 'inbound' (a caller paying InFlow) | 'outbound' (InFlow paying upstream)
-    scheme, // which payment scheme actually settled this row
+    rail, // which payment rail actually settled this row
     catalogId: pricing.catalogId,
     provider: pricing.provider,
     amount: pricing.amount,

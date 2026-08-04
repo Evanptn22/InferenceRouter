@@ -1,9 +1,9 @@
 import { PaymentError } from '../paymentError.js';
 
-// Reserved for card/fiat rails. Registered for completeness so the scheme
+// Reserved for card/fiat rails. Registered for completeness so the rail
 // taxonomy is visible in code, but never included in an offered `accepts`
 // array — not yet enabled end-to-end.
-export const scheme = 'instrument';
+export const rail = 'instrument';
 
 function notEnabled() {
   throw new PaymentError('instrument rail not yet enabled end-to-end', {

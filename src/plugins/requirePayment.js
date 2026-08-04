@@ -22,8 +22,8 @@ export function createPaymentGate(resolveResource) {
     }
 
     try {
-      const { scheme, payerId, receipt } = await verifyPresentedPayment({ presented, accepts });
-      request.paymentScheme = scheme;
+      const { rail, payerId, receipt } = await verifyPresentedPayment({ presented, accepts });
+      request.paymentRail = rail;
       request.payerId = payerId;
       request.paymentReceipt = receipt;
     } catch (err) {

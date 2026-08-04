@@ -5,7 +5,7 @@ import { chargedPrice, notCharged, providerCost } from './pricing.js';
 import * as ledger from './ledger.js';
 import { env } from '../config/env.js';
 import { buildAccepts } from '../payments/challenge.js';
-import { chooseScheme } from '../payments/chooseScheme.js';
+import { chooseRail } from '../payments/chooseRail.js';
 import { getScheme } from '../payments/schemes/index.js';
 
 const TIMEOUT_MS = 15_000;
@@ -47,8 +47,8 @@ async function callProvider(entry, messages) {
 
 // InFlow-as-buyer: synthesizes (does not fetch) an upstream 402 challenge
 // priced off entry.providerCostUSD, reusing the same buildAccepts() the
-// seller side uses, and pays it per the hard rule (chooseScheme always
-// resolves to 'balance' since both schemes are always offered here). Real
+// seller side uses, and pays it per the hard rule (chooseRail always
+// resolves to 'balance' since both rails are always offered here). Real
 // OpenAI/Anthropic/Groq don't speak x402/MPP today — this models what paying
 // them via agentic payments would look like.
 async function payUpstream(entry) {
@@ -57,19 +57,19 @@ async function payUpstream(entry) {
     priceUSD: entry.providerCostUSD,
     resourcePath: `upstream:${entry.provider}`,
   });
-  const chosenScheme = chooseScheme(accepts);
-  const requirement = accepts.find((a) => a.scheme === chosenScheme);
-  const { receipt } = await getScheme(chosenScheme).payRequirement({
+  const chosenRail = chooseRail(accepts);
+  const requirement = accepts.find((a) => a.rail === chosenRail);
+  const { receipt } = await getScheme(chosenRail).payRequirement({
     requirement,
     payerAccount: env.inflowBuyerId,
   });
-  return { scheme: chosenScheme, receipt };
+  return { rail: chosenRail, receipt };
 }
 
 // Walks the catalog entry's fallback chain, tries each candidate whose
 // breaker allows it, and meters exactly once — on whichever branch actually
 // produces the response returned to the caller.
-export async function route({ catalogId, messages, payerId, callerScheme }) {
+export async function route({ catalogId, messages, payerId, callerRail }) {
   const chain = getFallbackChain(catalogId);
   if (chain.length === 0) {
     throw new Error(`unknown catalog id "${catalogId}"`);
@@ -86,16 +86,16 @@ export async function route({ catalogId, messages, payerId, callerScheme }) {
       const { content, latencyMs } = await callProvider(entry, messages);
       recordSuccess(entry.id);
       const pricing = chargedPrice(entry);
-      ledger.record({ payerId, pricing, status: 'ok', latencyMs, direction: 'inbound', scheme: callerScheme });
+      ledger.record({ payerId, pricing, status: 'ok', latencyMs, direction: 'inbound', rail: callerRail });
       ledger.record({
         payerId: env.inflowBuyerId,
         pricing: providerCost(entry),
         status: 'ok',
         latencyMs,
         direction: 'outbound',
-        scheme: upstreamPayment.scheme,
+        rail: upstreamPayment.rail,
       });
-      return { content, pricing, latencyMs, upstreamScheme: upstreamPayment.scheme };
+      return { content, pricing, latencyMs, upstreamRail: upstreamPayment.rail };
     } catch (err) {
       recordFailure(entry.id);
       lastError = err;
@@ -109,7 +109,7 @@ export async function route({ catalogId, messages, payerId, callerScheme }) {
     status: 'error',
     latencyMs: 0,
     direction: 'inbound',
-    scheme: callerScheme,
+    rail: callerRail,
   });
   const error = new Error(
     `all providers in the fallback chain for "${catalogId}" failed: ${lastError?.message}`
