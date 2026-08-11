@@ -52,7 +52,7 @@ async function callProvider(entry, messages) {
 // OpenAI/Anthropic/Groq don't speak x402/MPP today — this models what paying
 // them via agentic payments would look like.
 async function payUpstream(entry) {
-  const accepts = buildAccepts({
+  const accepts = await buildAccepts({
     resourceId: entry.id,
     priceUSD: entry.providerCostUSD,
     resourcePath: `upstream:${entry.provider}`,

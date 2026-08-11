@@ -14,7 +14,7 @@ export function createPaymentGate(resolveResource) {
       return;
     }
 
-    const accepts = buildAccepts({ ...resource, resourcePath: request.url });
+    const accepts = await buildAccepts({ ...resource, resourcePath: request.url });
     const presented = request.headers['x-payment'];
     if (!presented) {
       reply.code(402).send({ error: 'payment required', accepts });

@@ -12,14 +12,18 @@ const OFFERED_RAILS = ['balance', 'exact-onchain'];
 const SUPPORTED_MODES = ['charge'];
 const SUPPORTED_SCHEMES = ['exact'];
 
-export function buildAccepts({ resourceId, priceUSD, resourcePath, mode = 'charge', scheme = 'exact' }) {
+// Async because live-mode 'exact-onchain' resolves a real price against
+// InFlow's hosted /v1/x402/config (cached after the first call, but still a
+// Promise-returning call) — mock mode and 'balance' resolve synchronously,
+// but Promise.all doesn't care either way.
+export async function buildAccepts({ resourceId, priceUSD, resourcePath, mode = 'charge', scheme = 'exact' }) {
   if (!SUPPORTED_MODES.includes(mode)) {
     throw new PaymentError(`payment mode "${mode}" not yet implemented`, { statusCode: 501, code: 'not_implemented' });
   }
   if (!SUPPORTED_SCHEMES.includes(scheme)) {
     throw new PaymentError(`payment scheme "${scheme}" not yet implemented`, { statusCode: 501, code: 'not_implemented' });
   }
-  return OFFERED_RAILS.map((name) =>
-    getScheme(name).buildRequirement({ resourceId, priceUSD, resourcePath, mode, scheme })
+  return Promise.all(
+    OFFERED_RAILS.map((name) => getScheme(name).buildRequirement({ resourceId, priceUSD, resourcePath, mode, scheme }))
   );
 }
