@@ -1,15 +1,52 @@
 import { env } from '../../config/env.js';
+import { PaymentError } from '../paymentError.js';
 import { debit } from '../../core/balances.js';
+import { Mppx } from 'mppx/server';
+import { inflow } from '@inflowpayai/mpp-seller';
 
-// MPP. Real, unmocked: a "balance" payment IS an internal ledger debit — no
-// external network to fake, so unlike "exact-onchain" this never runs in mock mode.
+// MPP. Seller side (buildRequirement/verifyPayment) is wired to the real
+// InFlow SDK in PAYMENT_MODE=live. Buyer side (payRequirement, used by
+// router.js's payUpstream) intentionally stays on the internal-ledger debit
+// regardless of PAYMENT_MODE — real buyer-side signing needs the
+// authenticated `inflow` CLI, a separate not-yet-built piece of work. Since
+// the hard rule always resolves payUpstream to this rail, making
+// payRequirement live-only-and-unimplemented here (the way exact.js does)
+// would break every live-mode request, not just an untested edge case.
 export const rail = 'balance';
 
-export function buildRequirement({ resourceId, priceUSD, resourcePath, mode, scheme }) {
+function assertLiveConfigured() {
+  if (!env.inflowApiKey) {
+    throw new PaymentError('INFLOW_API_KEY not set — required for PAYMENT_MODE=live', {
+      statusCode: 501,
+      code: 'not_implemented',
+    });
+  }
+  if (!env.mppSecretKey) {
+    throw new PaymentError('MPP_SECRET_KEY not set — required for PAYMENT_MODE=live', {
+      statusCode: 501,
+      code: 'not_implemented',
+    });
+  }
+}
+
+// Mppx.create() is cheap to hold module-lifetime — it just registers the
+// method + HMAC secret, no network call until challenge/verify are invoked.
+let mppx;
+function getMppx() {
+  if (!mppx) {
+    mppx = Mppx.create({
+      methods: [inflow({ apiKey: env.inflowApiKey, environment: env.inflowEnvironment })],
+      secretKey: env.mppSecretKey,
+    });
+  }
+  return mppx;
+}
+
+function buildMockRequirement({ resourceId, priceUSD, resourcePath, mode, scheme }) {
   return {
     rail,
-    mode, // 'charge' | 'session' | 'free' — only 'charge' is implemented today
-    scheme, // 'exact' | 'upto' — only 'exact' is implemented today
+    mode,
+    scheme,
     network: 'inflow:1',
     mechanism: 'InFlow-internal ledger transfer',
     settlementSpeed: 'instant',
@@ -22,9 +59,71 @@ export function buildRequirement({ resourceId, priceUSD, resourcePath, mode, sch
   };
 }
 
+export async function buildRequirement({ resourceId, priceUSD, resourcePath, mode, scheme }) {
+  if (env.paymentMode !== 'live') {
+    return buildMockRequirement({ resourceId, priceUSD, resourcePath, mode, scheme });
+  }
+  assertLiveConfigured();
+
+  // mppx.challenge.<method>.<intent>(...) mints a standalone, HMAC-bound
+  // Challenge object without needing an HTTP request — this is what lets
+  // 'balance' fit our buildRequirement/verifyPayment split instead of
+  // needing mppx's atomic charge()-against-a-raw-request lifecycle.
+  const challenge = await getMppx().challenge.inflow.charge({
+    amount: String(priceUSD),
+    currency: 'USDC',
+    scope: resourceId,
+  });
+
+  return {
+    rail,
+    mode,
+    scheme,
+    network: 'inflow:1',
+    mechanism: 'InFlow-internal ledger transfer',
+    settlementSpeed: 'instant',
+    amount: priceUSD,
+    currency: 'USD',
+    resource: resourcePath,
+    resourceId,
+    expiresAt: challenge.expires ?? null,
+    merchantId: env.mppMerchantId,
+    // Stashed for verifyPayment(): the minted Challenge object a submitted
+    // credential must be checked against.
+    _mppChallenge: challenge,
+  };
+}
+
 export async function verifyPayment({ requirement, payload }) {
-  debit(payload.payerId, requirement.amount, `pay:${requirement.resourceId}`);
-  return { payerId: payload.payerId, receipt: { rail, debited: requirement.amount } };
+  if (env.paymentMode !== 'live') {
+    debit(payload.payerId, requirement.amount, `pay:${requirement.resourceId}`);
+    return { payerId: payload.payerId, receipt: { rail, debited: requirement.amount } };
+  }
+
+  assertLiveConfigured();
+  if (!requirement._mppChallenge) {
+    throw new PaymentError('missing minted MPP challenge — buildRequirement() must run first', {
+      statusCode: 500,
+      code: 'invalid_proof',
+    });
+  }
+
+  // NOTE (untested without a genuine InFlow buyer client): real MPP
+  // credentials travel in an Authorization header
+  // (`Payment id="...", realm="...", method="inflow", ...`), decoded via
+  // mppx's own Credential.deserialize — not our custom {rail, ...} X-Payment
+  // envelope. `payload` here is whatever verify.js decoded from our envelope,
+  // so this assumes the caller nested a real credential payload/source under
+  // it. Reconciling the wire format (same open item as exact.js's x402 side)
+  // is tracked separately.
+  const credential = {
+    challenge: requirement._mppChallenge,
+    payload: payload.credentialPayload ?? payload,
+    source: payload.source,
+  };
+
+  const receipt = await getMppx().broadcastCredential(credential, { scope: requirement.resourceId });
+  return { payerId: payload.payerId ?? payload.source ?? 'unknown-payer', receipt: { rail, mppReceipt: receipt } };
 }
 
 export async function payRequirement({ requirement, payerAccount }) {
