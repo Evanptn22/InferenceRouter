@@ -1,4 +1,0 @@
-{"payerId":"acct-test-1","delta":-0.0005,"reason":"pay:fast-cheap","timestamp":"2026-08-11T05:27:42.372Z"}
-{"payerId":"inflow-router","delta":-0.0002,"reason":"upstream:fast-cheap","timestamp":"2026-08-11T05:27:42.373Z"}
-{"payerId":"inflow-router","delta":-0.0012,"reason":"upstream:balanced","timestamp":"2026-08-11T05:27:42.374Z"}
-{"payerId":"inflow-router","delta":-0.0025,"reason":"upstream:quality","timestamp":"2026-08-11T05:27:42.374Z"}

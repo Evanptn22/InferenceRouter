@@ -122,7 +122,16 @@ export async function verifyPayment({ requirement, payload }) {
     source: payload.source,
   };
 
-  const receipt = await getMppx().broadcastCredential(credential, { scope: requirement.resourceId });
+  // Wrapped for the same reason as exact.js: an unexpected error from
+  // broadcastCredential() must never escape raw — errorHandler.js's
+  // catch-all would echo error.message straight to the client/logs with no
+  // guarantee it's free of anything sensitive.
+  let receipt;
+  try {
+    receipt = await getMppx().broadcastCredential(credential, { scope: requirement.resourceId });
+  } catch {
+    throw new PaymentError('MPP credential verification failed', { statusCode: 502, code: 'invalid_proof' });
+  }
   return { payerId: payload.payerId ?? payload.source ?? 'unknown-payer', receipt: { rail, mppReceipt: receipt } };
 }
 

@@ -154,14 +154,31 @@ export async function verifyPayment({ requirement, payload }) {
   const { rail: _rail, ...paymentPayload } = payload;
   const paymentRequirements = requirement._x402Requirements;
 
-  const verifyResult = await getFacilitator().verify(paymentPayload, paymentRequirements);
+  // Wrapped: an unexpected error from the facilitator call (network failure,
+  // unexpected SDK exception shape, etc.) must never escape this function
+  // raw — errorHandler.js's catch-all would otherwise echo error.message
+  // straight back to the client (and into server logs) with no guarantee
+  // it's free of anything sensitive. Only our own PaymentError throws below
+  // are safe to let through as-is, since their messages are ours.
+  let verifyResult;
+  try {
+    verifyResult = await getFacilitator().verify(paymentPayload, paymentRequirements);
+  } catch {
+    throw new PaymentError('x402 payment verification failed', { statusCode: 502, code: 'invalid_proof' });
+  }
   if (!verifyResult.isValid) {
     throw new PaymentError(verifyResult.invalidReason ?? 'x402 payment failed verification', {
       statusCode: 402,
       code: 'invalid_proof',
     });
   }
-  const settleResult = await getFacilitator().settle(paymentPayload, paymentRequirements);
+
+  let settleResult;
+  try {
+    settleResult = await getFacilitator().settle(paymentPayload, paymentRequirements);
+  } catch {
+    throw new PaymentError('x402 payment settlement failed', { statusCode: 502, code: 'invalid_proof' });
+  }
   return { payerId: paymentPayload.payer ?? paymentRequirements.payTo, receipt: { rail, settleResult } };
 }
 
