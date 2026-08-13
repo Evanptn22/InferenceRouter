@@ -8,6 +8,7 @@ import chatRoutes from './routes/chat.js';
 import catalogRoutes from './routes/catalog.js';
 import usageRoutes from './routes/usage.js';
 import healthRoutes from './routes/health.js';
+import legalRoutes from './routes/legal.js';
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 
@@ -28,6 +29,7 @@ export function buildApp() {
   app.register(healthRoutes);
 
   app.register(fastifyStatic, { root: publicDir });
+  app.register(legalRoutes);
 
   return app;
 }

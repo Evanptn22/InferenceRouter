@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Privacy Policy — Inference Router</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #161923; --border: #2a2f40; --text: #e6e8ef;
+    --muted: #9099b0; --accent: #6ea8fe; --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  .shell { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; line-height: 1.6; }
+  h1 { font-size: 1.4rem; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .updated { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+  .notice {
+    background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3);
+    color: var(--warn); border-radius: 10px; padding: 14px 16px; font-size: 0.88rem; margin-bottom: 28px;
+  }
+  h2 { font-size: 1.05rem; margin-top: 32px; margin-bottom: 8px; color: var(--text); }
+  p, li { color: #c7cbd9; font-size: 0.94rem; }
+  ul { padding-left: 20px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size: 0.85em; }
+  a { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <h1>Privacy Policy</h1>
+  <p class="updated">Describes InFlow (this Inference Router)'s actual current data handling — see notice below.</p>
+
+  <div class="notice">
+    This document describes what the running code actually does, generated from the implementation directly — it
+    is <strong>not</strong> reviewed by legal counsel. Given this app now processes real payment credentials and
+    settlement data (via InFlow), don't rely on this as a compliant, binding privacy policy without professional
+    legal review before any real-world or public use.
+  </div>
+
+  <h2>What we collect</h2>
+  <table>
+    <thead><tr><th>Data</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td>Payer/account identifier</td><td>Whichever payment rail you pay with — a wallet address (on-chain <code>exact-onchain</code> rail) or an InFlow-issued account identifier (<code>balance</code>/MPP rail)</td></tr>
+      <tr><td>Chat message content</td><td>The <code>messages</code> you submit to <code>/v1/chat/completions</code></td></tr>
+      <tr><td>Payment &amp; transaction metadata</td><td>Amount, currency, rail used, catalog model, latency, timestamp — for every request, whether it succeeds or fails</td></tr>
+      <tr><td>IP address</td><td>Used only as a fallback rate-limiting key when no payment header is present</td></tr>
+    </tbody>
+  </table>
+
+  <h2>How it's used</h2>
+  <ul>
+    <li>Chat message content is forwarded to whichever upstream AI provider your selected model belongs to (OpenAI, Anthropic, or Groq) to generate a completion, and their response is returned to you.</li>
+    <li>Payment identifiers and payloads are sent to InFlow for verification and settlement of the payment you present.</li>
+    <li>Transaction metadata is used to compute your own spend history, returned to you via <code>/v1/usage</code> when you authenticate with the same payer identity.</li>
+  </ul>
+
+  <h2>Who we share data with</h2>
+  <ul>
+    <li><strong>InFlow</strong> — payment facilitator/PSP. Receives your payment payload and requirement details to verify and settle each transaction.</li>
+    <li><strong>OpenAI, Anthropic, or Groq</strong> — whichever provider backs the model you request receives the content of your chat messages to generate a response. We don't control their own data retention.</li>
+    <li>We do not sell data, and there is no advertising or third-party tracking on this service.</li>
+  </ul>
+
+  <h2>Storage &amp; retention</h2>
+  <p>
+    Transaction and usage records are stored in an append-only log on the server running this service. As currently
+    implemented, <strong>there is no automated retention limit or deletion mechanism</strong> — records persist
+    indefinitely until manually removed by an operator. There is no user-facing data deletion request flow today.
+  </p>
+
+  <h2>Security</h2>
+  <p>
+    This service does not terminate TLS itself — encryption in transit depends on how it's deployed (e.g. a
+    reverse proxy). Payment credentials (API keys, HMAC secrets) are held server-side in environment configuration,
+    not in this codebase's source.
+  </p>
+
+  <h2>Cookies</h2>
+  <p>This service does not set cookies. The demo UI (if used) stores your entered API key in browser <code>localStorage</code>, kept only on your device.</p>
+
+  <h2>Changes</h2>
+  <p>This policy reflects the code as of the date above and may change as the implementation changes.</p>
+
+  <p><a href="/">&larr; Back</a></p>
+</div>
+</body>
+</html>
