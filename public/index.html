@@ -50,38 +50,6 @@
     color: var(--muted);
     font-size: 0.9rem;
   }
-  .key-box {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 10px;
-  }
-  .key-box label {
-    font-size: 0.75rem;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  .key-box input {
-    background: transparent;
-    border: none;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    width: 150px;
-    outline: none;
-  }
-  .key-status {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--err);
-    flex: none;
-  }
-  .key-status.set { background: var(--ok); }
-
   nav.tabs {
     display: flex;
     gap: 4px;
@@ -219,16 +187,10 @@
 </head>
 <body>
 <div class="shell">
-
   <header class="top">
     <div>
       <h1>Inference Router</h1>
       <p>Browse the model catalog, send a test completion, and track spend.</p>
-    </div>
-    <div class="key-box">
-      <span class="key-status" id="keyStatus"></span>
-      <label for="apiKey">x-api-key</label>
-      <input id="apiKey" type="password" placeholder="demo-key" autocomplete="off" />
     </div>
   </header>
 
@@ -278,7 +240,7 @@
         </div>
         <button class="ghost" id="refreshUsage">Refresh</button>
       </div>
-      <div id="usageBody"><p class="empty">Enter an API key and switch to this tab to load usage.</p></div>
+      <div id="usageBody"><p class="empty">Switch to this tab to load usage.</p></div>
     </div>
   </section>
 
@@ -286,34 +248,14 @@
 
 <script>
 (function () {
-  const KEY_STORAGE = 'inferenceRouter.apiKey';
-  const apiKeyInput = document.getElementById('apiKey');
-  const keyStatus = document.getElementById('keyStatus');
-
-  apiKeyInput.value = localStorage.getItem(KEY_STORAGE) || '';
-  updateKeyStatus();
-
-  apiKeyInput.addEventListener('input', () => {
-    localStorage.setItem(KEY_STORAGE, apiKeyInput.value);
-    updateKeyStatus();
-  });
-
-  function updateKeyStatus() {
-    keyStatus.classList.toggle('set', apiKeyInput.value.trim().length > 0);
-  }
-
-  function apiKey() {
-    return apiKeyInput.value.trim();
-  }
-
   async function api(path, options = {}) {
     const headers = { 'content-type': 'application/json', ...(options.headers || {}) };
-    if (apiKey()) headers['x-api-key'] = apiKey();
     const res = await fetch(path, { ...options, headers });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       const err = new Error(body.error || `request failed (${res.status})`);
       err.status = res.status;
+      err.accepts = body.accepts;
       throw err;
     }
     return body;
@@ -392,10 +334,6 @@
     const responseBox = document.getElementById('chatResponse');
     chatBanner.innerHTML = '';
 
-    if (!apiKey()) {
-      chatBanner.innerHTML = '<div class="banner error">Enter an x-api-key above first.</div>';
-      return;
-    }
     if (!model || !content) {
       chatBanner.innerHTML = '<div class="banner error">Pick a model and enter a message.</div>';
       return;
@@ -418,7 +356,7 @@
       document.getElementById('chatContent').textContent = choice;
       responseBox.style.display = 'block';
     } catch (err) {
-      chatBanner.innerHTML = `<div class="banner error">${escapeHtml(err.message)}</div>`;
+      chatBanner.innerHTML = `<div class="banner error">${escapeHtml(paymentAwareMessage(err))}</div>`;
     } finally {
       sendBtn.disabled = false;
       chatHint.textContent = '';
@@ -431,13 +369,6 @@
     const usageBanner = document.getElementById('usageBanner');
     const usageTotal = document.getElementById('usageTotal');
     usageBanner.innerHTML = '';
-
-    if (!apiKey()) {
-      usageBanner.innerHTML = '<div class="banner error">Enter an x-api-key above first.</div>';
-      usageTotal.innerHTML = '–<span>USD spent</span>';
-      usageBody.innerHTML = '<p class="empty">No key set.</p>';
-      return;
-    }
 
     usageBody.innerHTML = '<p class="empty">Loading…</p>';
     try {
@@ -466,11 +397,24 @@
           </tbody>
         </table>`;
     } catch (err) {
-      usageBody.innerHTML = `<p class="empty">Failed to load usage: ${escapeHtml(err.message)}</p>`;
+      usageBody.innerHTML = `<p class="empty">${escapeHtml(paymentAwareMessage(err))}</p>`;
     }
   }
 
   document.getElementById('refreshUsage').addEventListener('click', loadUsage);
+
+  // Every request is now paywalled (x402/MPP) rather than api-key-gated — a
+  // 402 here just means no payment header was presented, which is expected
+  // since this demo UI doesn't yet walk through a payment flow itself.
+  function paymentAwareMessage(err) {
+    if (err.status === 402) {
+      const schemes = (err.accepts || []).map((a) => a.rail).join(', ');
+      return schemes
+        ? `Payment required (accepts: ${schemes}) — this UI doesn't walk through paying yet; use the API directly with an X-Payment header.`
+        : 'Payment required — this UI doesn\'t walk through paying yet; use the API directly with an X-Payment header.';
+    }
+    return err.message;
+  }
 
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, (c) => ({
