@@ -1,10 +1,11 @@
-import * as openai from './openai.js';
-import * as anthropic from './anthropic.js';
 import * as groq from './groq.js';
+import * as cerebras from './Cerebras.js';
+import * as gemini from './Gemini.js';
+import * as openrouter from './OpenRouter.js';
 
 export { ProviderError } from './providerError.js';
 
-const adapters = { openai, anthropic, groq };
+const adapters = { groq, cerebras, gemini, openrouter };
 
 export function getAdapter(providerName) {
   const adapter = adapters[providerName];

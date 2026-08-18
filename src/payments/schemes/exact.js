@@ -92,8 +92,18 @@ export async function buildRequirement({ resourceId, priceUSD, resourcePath, mod
   }
   assertLiveConfigured();
 
-  const client = await getSellerClient();
-  const options = await inflowAccepts(client, { price: `$${priceUSD}`, schemes: ['exact'] });
+  // Wrapped for the same reason as verifyPayment() below: an unexpected
+  // error here (auth rejected, network failure, InFlow outage) must not
+  // escape raw — it happens during 402 challenge-building, before any
+  // payment is even presented, so there's no PaymentError-aware caller yet
+  // to catch an unwrapped SDK exception.
+  let options;
+  try {
+    const client = await getSellerClient();
+    options = await inflowAccepts(client, { price: `$${priceUSD}`, schemes: ['exact'] });
+  } catch {
+    throw new PaymentError('failed to build x402 payment challenge', { statusCode: 502, code: 'not_implemented' });
+  }
   const option = options[0];
   if (!option) {
     throw new PaymentError('InFlow seller config has no "exact"-scheme payment option configured', {

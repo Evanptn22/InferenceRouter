@@ -1,11 +1,12 @@
 import { ProviderError } from './providerError.js';
 
+// Cerebras exposes an OpenAI-compatible chat-completions endpoint.
 export async function invoke({ apiKey, model, messages, signal }) {
   if (!apiKey) {
-    throw new ProviderError('missing OPENAI_API_KEY', { status: 401, retryable: false });
+    throw new ProviderError('missing CEREBRAS_API_KEY', { status: 401, retryable: false });
   }
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await fetch('https://api.cerebras.ai/v1/chat/completions', {
     method: 'POST',
     signal,
     headers: {
@@ -17,7 +18,7 @@ export async function invoke({ apiKey, model, messages, signal }) {
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new ProviderError(`openai ${res.status}: ${body.slice(0, 200)}`, {
+    throw new ProviderError(`cerebras ${res.status}: ${body.slice(0, 200)}`, {
       status: res.status,
       retryable: res.status >= 500,
     });

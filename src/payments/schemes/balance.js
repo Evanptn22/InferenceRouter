@@ -69,11 +69,22 @@ export async function buildRequirement({ resourceId, priceUSD, resourcePath, mod
   // Challenge object without needing an HTTP request — this is what lets
   // 'balance' fit our buildRequirement/verifyPayment split instead of
   // needing mppx's atomic charge()-against-a-raw-request lifecycle.
-  const challenge = await getMppx().challenge.inflow.charge({
-    amount: String(priceUSD),
-    currency: 'USDC',
-    scope: resourceId,
-  });
+  //
+  // Wrapped for the same reason as verifyPayment() below: an unexpected
+  // error here (auth rejected, network failure, InFlow outage) must not
+  // escape raw — it happens during 402 challenge-building, before any
+  // payment is even presented, so there's no PaymentError-aware caller yet
+  // to catch an unwrapped SDK exception.
+  let challenge;
+  try {
+    challenge = await getMppx().challenge.inflow.charge({
+      amount: String(priceUSD),
+      currency: 'USDC',
+      scope: resourceId,
+    });
+  } catch {
+    throw new PaymentError('failed to build MPP payment challenge', { statusCode: 502, code: 'not_implemented' });
+  }
 
   return {
     rail,
