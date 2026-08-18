@@ -16,6 +16,20 @@ import {
 // pre-authorize+settle) — a different axis from which rail moves the money.
 export const rail = 'exact-onchain';
 
+// Logs a curated, known-safe subset of an unexpected SDK error server-side
+// so it stays diagnosable — never the full error object, which could carry
+// unexpected fields (e.g. request headers) depending on what the third-party
+// SDK chose to attach. The client only ever gets the generic PaymentError
+// message, never this.
+function logSanitized(context, err) {
+  console.error(`[payments/exact] ${context}:`, {
+    name: err?.name,
+    message: err?.message,
+    httpStatus: err?.httpStatus,
+    code: err?.code,
+  });
+}
+
 function assertLiveConfigured() {
   if (!env.inflowApiKey) {
     throw new PaymentError('INFLOW_API_KEY not set — required for PAYMENT_MODE=live', {
@@ -101,7 +115,8 @@ export async function buildRequirement({ resourceId, priceUSD, resourcePath, mod
   try {
     const client = await getSellerClient();
     options = await inflowAccepts(client, { price: `$${priceUSD}`, schemes: ['exact'] });
-  } catch {
+  } catch (err) {
+    logSanitized('buildRequirement', err);
     throw new PaymentError('failed to build x402 payment challenge', { statusCode: 502, code: 'not_implemented' });
   }
   const option = options[0];
@@ -173,7 +188,8 @@ export async function verifyPayment({ requirement, payload }) {
   let verifyResult;
   try {
     verifyResult = await getFacilitator().verify(paymentPayload, paymentRequirements);
-  } catch {
+  } catch (err) {
+    logSanitized('verifyPayment.verify', err);
     throw new PaymentError('x402 payment verification failed', { statusCode: 502, code: 'invalid_proof' });
   }
   if (!verifyResult.isValid) {
@@ -186,7 +202,8 @@ export async function verifyPayment({ requirement, payload }) {
   let settleResult;
   try {
     settleResult = await getFacilitator().settle(paymentPayload, paymentRequirements);
-  } catch {
+  } catch (err) {
+    logSanitized('verifyPayment.settle', err);
     throw new PaymentError('x402 payment settlement failed', { statusCode: 502, code: 'invalid_proof' });
   }
   return { payerId: paymentPayload.payer ?? paymentRequirements.payTo, receipt: { rail, settleResult } };

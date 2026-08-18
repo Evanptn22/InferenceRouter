@@ -14,6 +14,20 @@ import { inflow } from '@inflowpayai/mpp-seller';
 // would break every live-mode request, not just an untested edge case.
 export const rail = 'balance';
 
+// Logs a curated, known-safe subset of an unexpected SDK error server-side
+// so it stays diagnosable — never the full error object, which could carry
+// unexpected fields (e.g. request headers) depending on what the third-party
+// SDK chose to attach. The client only ever gets the generic PaymentError
+// message, never this.
+function logSanitized(context, err) {
+  console.error(`[payments/balance] ${context}:`, {
+    name: err?.name,
+    message: err?.message,
+    httpStatus: err?.httpStatus,
+    code: err?.code,
+  });
+}
+
 function assertLiveConfigured() {
   if (!env.inflowApiKey) {
     throw new PaymentError('INFLOW_API_KEY not set — required for PAYMENT_MODE=live', {
@@ -82,7 +96,8 @@ export async function buildRequirement({ resourceId, priceUSD, resourcePath, mod
       currency: 'USDC',
       scope: resourceId,
     });
-  } catch {
+  } catch (err) {
+    logSanitized('buildRequirement', err);
     throw new PaymentError('failed to build MPP payment challenge', { statusCode: 502, code: 'not_implemented' });
   }
 
@@ -140,7 +155,8 @@ export async function verifyPayment({ requirement, payload }) {
   let receipt;
   try {
     receipt = await getMppx().broadcastCredential(credential, { scope: requirement.resourceId });
-  } catch {
+  } catch (err) {
+    logSanitized('verifyPayment', err);
     throw new PaymentError('MPP credential verification failed', { statusCode: 502, code: 'invalid_proof' });
   }
   return { payerId: payload.payerId ?? payload.source ?? 'unknown-payer', receipt: { rail, mppReceipt: receipt } };
