@@ -33,9 +33,9 @@ export const catalog = [
   },
   {
     id: 'quality',
-    provider: 'openrouter',
-    providerModel: 'anthropic/claude-3.5-haiku',
-    apiKey: env.openrouterApiKey,
+    provider: 'anthropic',
+    providerModel: 'claude-3-5-haiku-20241022',
+    apiKey: env.anthropicApiKey,
     pricePerRequestUSD: 0.004,
     providerCostUSD: 0.0025,
     fallback: null,

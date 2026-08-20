@@ -3,7 +3,7 @@ export const env = {
   groqApiKey: process.env.GROQ_API_KEY ?? '',
   cerebrasApiKey: process.env.CEREBRAS_API_KEY ?? '',
   geminiApiKey: process.env.GEMINI_API_KEY ?? '',
-  openrouterApiKey: process.env.OPENROUTER_API_KEY ?? '',
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
 
   // Payments (x402 + MPP) — see src/payments/.
   // paymentMode gates BOTH real InFlow SDK rails now: 'mock' keeps the
