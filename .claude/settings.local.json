@@ -1,5 +1,4 @@
 {
-  "autoCompactEnabled": false,
   "permissions": {
     "allow": [
       "Bash(curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh)",
@@ -15,10 +14,13 @@
       "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:APPDATA\\\\nvm\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:LOCALAPPDATA\\\\Programs\" -ErrorAction SilentlyContinue | Select-Object Name)",
       "PowerShell(npm start)",
       "Bash(curl -s -o /tmp/step1.json -w \"%{http_code}\\\\n\" -X POST http://localhost:3000/v1/chat/completions -H 'content-type: application/json' -d '{\"model\":\"balanced\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}')",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(inflow --version)",
+      "Bash(npm view *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\HI\\Documents\\InferenceRouter"
     ]
-  }
+  },
+  "autoCompactEnabled": false
 }
