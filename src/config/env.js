@@ -20,4 +20,9 @@ export const env = {
   inflowBuyerId: process.env.INFLOW_BUYER_ID ?? 'inflow-router',
   usageQueryPriceUSD: Number(process.env.USAGE_QUERY_PRICE_USD ?? 0.0001),
   demoStartingBalanceUSD: Number(process.env.DEMO_STARTING_BALANCE_USD ?? 1.0),
+
+  // AEP (Agent Enrollment Protocol) — see src/aep/. Must be a did:web
+  // identifier for the domain this service is actually deployed on;
+  // the placeholder below only works for local testing.
+  aepServiceDid: process.env.AEP_SERVICE_DID ?? 'did:web:localhost%3A3000',
 };

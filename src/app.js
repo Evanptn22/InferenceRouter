@@ -9,6 +9,8 @@ import catalogRoutes from './routes/catalog.js';
 import usageRoutes from './routes/usage.js';
 import healthRoutes from './routes/health.js';
 import legalRoutes from './routes/legal.js';
+import aepRoutes from './routes/aep.js';
+import odpRoutes from './routes/odp.js';
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 
@@ -27,6 +29,8 @@ export function buildApp() {
   app.register(catalogRoutes);
   app.register(usageRoutes);
   app.register(healthRoutes);
+  app.register(aepRoutes);
+  app.register(odpRoutes);
 
   app.register(fastifyStatic, { root: publicDir });
   app.register(legalRoutes);
