@@ -1,3 +1,4 @@
+import { Challenge } from 'mppx';
 import { getScheme } from './schemes/index.js';
 import { PaymentError } from './paymentError.js';
 
@@ -26,4 +27,13 @@ export async function buildAccepts({ resourceId, priceUSD, resourcePath, mode = 
   return Promise.all(
     OFFERED_RAILS.map((name) => getScheme(name).buildRequirement({ resourceId, priceUSD, resourcePath, mode, scheme }))
   );
+}
+
+// MPP requires a 402 response to carry a `WWW-Authenticate: Payment ...`
+// header (per the mppx Challenge format) in addition to any JSON body — the
+// `inflow` CLI's probe step rejects a 402 without one. x402 doesn't need an
+// equivalent header, so this is a no-op when only exact-onchain is offered.
+export function wwwAuthenticateHeader(accepts) {
+  const mppRequirement = accepts.find((requirement) => requirement._mppChallenge);
+  return mppRequirement ? Challenge.serialize(mppRequirement._mppChallenge) : undefined;
 }
