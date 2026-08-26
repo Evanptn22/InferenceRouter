@@ -8,7 +8,7 @@
 // Run from the project root: node --env-file=.env _settlement-demo.mjs
 // Requires InferenceRouter's own server already running on localhost:3000.
 // Throwaway diagnostic script — not part of the app.
-import { MppClient, parseChallengeHeaders } from '@inflowpayai/mpp';
+import { MppClient, parseChallengeHeaders, decodeCredential } from '@inflowpayai/mpp';
 import { Mppx } from 'mppx/server';
 import { inflow } from '@inflowpayai/mpp-seller';
 
@@ -70,15 +70,19 @@ const mppx = Mppx.create({
   secretKey: MPP_SECRET_KEY,
 });
 
+// tx.credential is a base64url-encoded MppCredential blob, not the raw
+// scheme-prefixed string broadcastCredential(string, ...) expects — decode
+// it first into the {challenge, payload, source} object form.
+const decodedCredential = decodeCredential(tx.credential);
 console.log('--> broadcasting credential to settle...');
-const receipt = await mppx.broadcastCredential(tx.credential, { scope: 'fast-cheap' });
+const receipt = await mppx.broadcastCredential(decodedCredential, { scope: 'fast-cheap' });
 console.log('PAID:', receipt);
 
 // --- TEST 3: replay-rejected ---------------------------------------------
 console.log('\n=== TEST 3: replay-rejected ===');
 console.log('--> re-broadcasting the SAME credential a second time (should fail)...');
 try {
-  const replay = await mppx.broadcastCredential(tx.credential, { scope: 'fast-cheap' });
+  const replay = await mppx.broadcastCredential(decodedCredential, { scope: 'fast-cheap' });
   console.warn('UNEXPECTED: replay was accepted:', replay);
 } catch (err) {
   console.log('replay correctly rejected:', err?.message ?? err);
