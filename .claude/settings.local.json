@@ -16,7 +16,8 @@
       "Bash(curl -s -o /tmp/step1.json -w \"%{http_code}\\\\n\" -X POST http://localhost:3000/v1/chat/completions -H 'content-type: application/json' -d '{\"model\":\"balanced\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}')",
       "Read(//tmp/**)",
       "Bash(inflow --version)",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "mcp__inflow__mpp_pay"
     ],
     "additionalDirectories": [
       "C:\\Users\\HI\\Documents\\InferenceRouter"
