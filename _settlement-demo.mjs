@@ -10,6 +10,7 @@
 // Throwaway diagnostic script — not part of the app.
 import { MppClient, parseChallengeHeaders, decodeCredential } from '@inflowpayai/mpp';
 import { Mppx } from 'mppx/server';
+import { PaymentRequest } from 'mppx';
 import { inflow } from '@inflowpayai/mpp-seller';
 
 const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:3000';
@@ -72,8 +73,15 @@ const mppx = Mppx.create({
 
 // tx.credential is a base64url-encoded MppCredential blob, not the raw
 // scheme-prefixed string broadcastCredential(string, ...) expects — decode
-// it first into the {challenge, payload, source} object form.
-const decodedCredential = decodeCredential(tx.credential);
+// it first into the {challenge, payload, source} object form. The decoded
+// challenge.request field is still base64url-JCS-encoded too (per
+// @inflowpayai/mpp's MppChallenge shape) — mppx's own Challenge.Schema
+// expects it already deserialized into a plain object.
+const decoded = decodeCredential(tx.credential);
+const decodedCredential = {
+  ...decoded,
+  challenge: { ...decoded.challenge, request: PaymentRequest.deserialize(decoded.challenge.request) },
+};
 console.log('--> broadcasting credential to settle...');
 const receipt = await mppx.broadcastCredential(decodedCredential, { scope: 'fast-cheap' });
 console.log('PAID:', receipt);
