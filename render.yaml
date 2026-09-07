@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: inference-router
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      # Set to 'sandbox' for the first deploy to validate hosting end-to-end
+      # with the existing sandbox key; switch to 'production' only once that's
+      # clean (see render.yaml notes / deployment steps).
+      - key: PAYMENT_MODE
+        sync: false
+      - key: INFLOW_ENVIRONMENT
+        sync: false
+      - key: INFLOW_API_KEY
+        sync: false
+      - key: MPP_SECRET_KEY
+        sync: false
+      # Must be did:web:<this-service's-actual-domain> — unknown until after
+      # the first deploy assigns a *.onrender.com URL (or a custom domain is
+      # attached). Set this once that's known, then redeploy.
+      - key: AEP_SERVICE_DID
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CEREBRAS_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
