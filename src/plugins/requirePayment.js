@@ -67,3 +67,31 @@ export function createPaymentGate(resolveResource, { probeFallback, validateBody
     }
   };
 }
+
+// Guards against a client replaying the same presented X-Payment credential
+// to double-charge (mock-mode balance debits have no other uniqueness check;
+// live-mode MPP already rejects a reused credential inside broadcastCredential,
+// this is defense in depth). Must run BEFORE createPaymentGate, not after —
+// checking post-verification would be too late for mock mode, where
+// verifyPayment's debit() already happened by then.
+//
+// Keyed on the raw presented string, not the resulting receipt: two
+// different legitimate payments for the same resource can produce
+// identical-looking receipts (e.g. mock mode's `{rail, debited: 0.0005}`),
+// so the receipt isn't a safe uniqueness key.
+export function createPaymentReplayGuard(replayStore) {
+  return async function guardPaymentReplay(request, reply) {
+    const presented = request.headers['x-payment'];
+    if (!presented) {
+      // No payment presented yet — nothing to guard; createPaymentGate
+      // handles challenging/rejecting unauthenticated requests.
+      return;
+    }
+    const alreadyUsed = await replayStore.hasBeenUsed(presented);
+    if (alreadyUsed) {
+      reply.code(402).send({ error: 'payment credential has already been used' });
+      return;
+    }
+    await replayStore.markAsUsed(presented);
+  };
+} 

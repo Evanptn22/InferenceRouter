@@ -1,6 +1,9 @@
-import { createPaymentGate } from '../plugins/requirePayment.js';
+import { createPaymentGate, createPaymentReplayGuard } from '../plugins/requirePayment.js';
+import { createInMemoryReplayStore } from '../payments/replayStore.js';
 import { getCatalogEntry } from '../config/catalog.js';
 import { route } from '../core/router.js';
+
+const replayStore = createInMemoryReplayStore();
 
 const VALID_ROLES = ['system', 'user', 'assistant'];
 
@@ -51,10 +54,16 @@ export default async function chatRoutes(app) {
   app.post(
     '/v1/chat/completions',
     {
-      preHandler: createPaymentGate(resolveChatResource, {
-        probeFallback,
-        validateBody: (request) => validateChatBody(request.body),
-      }),
+      // Order matters: the replay guard must run before the payment gate so
+      // a replayed credential is rejected before verifyPayment's mock-mode
+      // debit() (or any other side effect) has a chance to run twice.
+      preHandler: [
+        createPaymentReplayGuard(replayStore),
+        createPaymentGate(resolveChatResource, {
+          probeFallback,
+          validateBody: (request) => validateChatBody(request.body),
+        }),
+      ],
     },
     async (request, reply) => {
       const { model, messages } = request.body;
